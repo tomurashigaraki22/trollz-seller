@@ -45,11 +45,31 @@ function ProductModal({ product, onClose, onSave }) {
     category: product?.category ?? '',
     description: product?.description ?? '',
     status: product?.status ?? 'active',
+    image_url: product?.image_url ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError('');
+    setUploading(true);
+    try {
+      const res = await apiClient.uploadProductImage(file);
+      const imageUrl = res.url || res.data?.url || '';
+      if (!imageUrl) throw new Error('Upload did not return a URL');
+      setForm((f) => ({ ...f, image_url: imageUrl }));
+    } catch (err) {
+      setError(err.message || 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,6 +153,27 @@ function ProductModal({ product, onClose, onSave }) {
                 rows={3}
                 className="ts-input resize-none"
               />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Product image
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="ts-input"
+              />
+              {uploading && (
+                <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+                  Uploading image...
+                </p>
+              )}
+              {form.image_url && (
+                <div className="mt-3 rounded-xl overflow-hidden border border-[var(--border)]">
+                  <img src={form.image_url} alt="Product preview" className="w-full h-40 object-cover" />
+                </div>
+              )}
             </div>
           </div>
 
