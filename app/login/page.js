@@ -45,14 +45,14 @@ export default function LoginPage() {
       <div
         className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse, rgba(34,197,94,0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(254,76,28,0.07) 0%, transparent 70%)',
           filter: 'blur(40px)',
         }}
       />
       <div
         className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse, rgba(99,102,241,0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse, rgba(254,76,28,0.04) 0%, transparent 70%)',
           filter: 'blur(60px)',
         }}
       />
@@ -64,7 +64,7 @@ export default function LoginPage() {
             className="inline-flex w-16 h-16 rounded-2xl items-center justify-center mb-5"
             style={{
               background: 'var(--grad-primary)',
-              boxShadow: '0 0 0 1px rgba(34,197,94,0.3), 0 8px 32px rgba(34,197,94,0.3)',
+              boxShadow: '0 0 0 1px rgba(254,76,28,0.3), 0 8px 24px rgba(254,76,28,0.18)',
             }}
           >
             <span className="text-3xl font-black text-white">T</span>

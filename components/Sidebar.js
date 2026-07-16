@@ -44,45 +44,26 @@ export default function Sidebar() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Toggle sidebar"
-        className="lg:hidden fixed top-4 left-4 z-50 w-9 h-9 rounded-xl flex items-center justify-center text-[var(--text-secondary)] transition-all"
-        style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-sm)' }}
+        className="lg:hidden fixed top-4 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-ink-900 text-white shadow-sm"
       >
         <Icon icon={open ? Cancel01Icon : Menu01Icon} size={18} />
       </button>
 
       <aside
         className={[
-          'fixed top-0 left-0 z-40 h-screen w-[220px] flex flex-col',
+          'fixed top-0 left-0 z-40 flex h-screen w-64 flex-col shrink-0 border-r border-white/10 bg-ink-900 text-ink-300',
           'transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         ].join(' ')}
-        style={{ background: 'var(--bg-surface)', borderRight: '1px solid var(--border)' }}
       >
-        <div
-          className="flex items-center gap-3 px-5 h-[60px] shrink-0"
-          style={{ borderBottom: '1px solid var(--border-muted)' }}
-        >
-          <div
-            className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
-            style={{ background: 'var(--grad-primary)', boxShadow: 'var(--shadow-glow)' }}
-          >
-            <span className="text-sm font-black text-white tracking-tight">T</span>
-          </div>
-          <div className="leading-tight">
-            <p className="text-[13px] font-bold text-[var(--text-base)] tracking-tight">
-              Trollz<span style={{ color: 'var(--primary)' }}>Store</span>
-            </p>
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Seller Dashboard</p>
-          </div>
+        <div className="border-b border-white/10 px-5 py-5">
+          <span className="text-lg font-extrabold tracking-tight text-white">
+            Trollz<span className="text-brand-500">Seller</span>
+          </span>
+          <p className="mt-1 truncate text-xs text-ink-500">Seller Dashboard</p>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          <p
-            className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.1em]"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Navigation
-          </p>
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {nav.map((item) => {
             const active = isActive(item.href);
             return (
@@ -90,35 +71,31 @@ export default function Sidebar() {
                 key={item.name}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`nav-link${active ? ' active' : ''}`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  active ? 'bg-brand-500 text-white' : 'text-ink-300 hover:bg-white/5 hover:text-white'
+                }`}
               >
-                <Icon icon={item.icon} size={17} strokeWidth={active ? 2 : 1.6} className="nav-icon" />
-                <span>{item.name}</span>
+                <Icon icon={item.icon} size={17} strokeWidth={active ? 2 : 1.6} />
+                {item.name}
               </Link>
             );
           })}
         </nav>
 
-        <div className="px-4 py-4 shrink-0 space-y-2" style={{ borderTop: '1px solid var(--border-muted)' }}>
-          <div
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px]"
-            style={{ background: 'var(--bg-hover)' }}
-          >
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-black text-white"
-              style={{ background: 'var(--grad-primary)' }}
-            >
+        <div className="space-y-2 border-t border-white/10 px-3 py-4">
+          <div className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-xs font-black text-white">
               {sellerName ? sellerName[0].toUpperCase() : 'S'}
             </div>
-            <div className="leading-tight min-w-0 flex-1">
-              <p className="text-xs font-semibold text-[var(--text-base)] truncate">
-                {sellerName || 'Seller'}
-              </p>
-              <p className="text-[10px] text-[var(--text-muted)]">Seller account</p>
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-xs font-semibold text-white">{sellerName || 'Seller'}</p>
+              <p className="text-[10px] text-ink-500">Seller account</p>
             </div>
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] shrink-0 animate-pulse" />
           </div>
-          <button onClick={handleLogout} className="ts-btn-ghost ts-btn-sm w-full justify-start">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-danger hover:bg-white/5"
+          >
             <Icon icon={Logout01Icon} size={15} />
             Sign out
           </button>

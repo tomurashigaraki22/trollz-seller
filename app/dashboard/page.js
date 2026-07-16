@@ -9,7 +9,7 @@ import {
   Package01Icon,
   ShoppingBag01Icon,
   DollarCircleIcon,
-  TrendingUpDownIcon,
+  AlertDiamondIcon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 import Link from 'next/link';
@@ -47,43 +47,62 @@ function MetricCard({ label, value, sub, icon, gradient, loading }) {
   );
 }
 
-function SparkChart({ data = [], label }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
+function SparkChart({ data = [] }) {
+  // backend returns { day, total } per item
+  const values = data.map((d) => Number(d.total ?? d.value ?? 0));
+  const max = Math.max(...values, 1);
+  const labels = data.map((d) => {
+    if (d.label) return d.label;
+    if (d.day) return new Date(d.day).toLocaleDateString('en', { weekday: 'short' });
+    return '';
+  });
+
   return (
     <div className="ts-card p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--text-base)' }}>{label}</h2>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Last 7 days</p>
+          <h2 className="text-sm font-bold" style={{ color: 'var(--text-base)' }}>Revenue — Last 7 Days</h2>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Daily sales total</p>
         </div>
         <Link href="/dashboard/analytics" className="ts-btn-ghost ts-btn-sm flex items-center gap-1.5">
           Full analytics
           <Icon icon={ArrowRight01Icon} size={13} />
         </Link>
       </div>
-      <div className="flex items-end gap-1.5 h-32">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
-            <div
-              className="chart-bar w-full"
-              style={{ height: `${(d.value / max) * 100}%` }}
-              title={`${d.label}: ${d.value}`}
-            />
-            <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{d.label}</span>
-          </div>
-        ))}
-      </div>
+      {data.length === 0 ? (
+        <div className="flex items-center justify-center h-32" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm">No data yet</p>
+        </div>
+      ) : (
+        <div className="flex items-end gap-1.5 h-32">
+          {values.map((v, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+              <div
+                className="chart-bar w-full"
+                style={{ height: `${(v / max) * 100}%` }}
+                title={`${labels[i]}: N${v.toLocaleString()}`}
+              />
+              <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>{labels[i]}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function OrderRow({ order }) {
-  const statusVariant =
-    order.status === 'delivered' ? 'success'
-    : order.status === 'shipped' ? 'info'
-    : order.status === 'processing' ? 'warning'
-    : order.status === 'cancelled' ? 'error'
+function statusVariant(s) {
+  return s === 'delivered' ? 'success'
+    : s === 'shipped'    ? 'info'
+    : s === 'processing' ? 'warning'
+    : s === 'cancelled'  ? 'error'
     : 'default';
+}
+
+function OrderRow({ order }) {
+  // backend fields: id, order_number, buyer_name, total_amount, order_status, payment_status, created_at
+  const status = order.order_status || order.status || 'pending';
+  const location = order.delivery_city || order.city || '';
 
   return (
     <div
@@ -92,31 +111,21 @@ function OrderRow({ order }) {
     >
       <div className="min-w-0">
         <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-base)' }}>
-          #{order.id || order.order_number}
+          #{order.order_number || order.id}
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
-          {order.city || order.delivery_city || 'Unknown location'} &middot; {order.items_count ?? order.items?.length ?? '-'} item(s)
+          {location ? `${location} · ` : ''}{order.buyer_name || 'Customer'}
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
-          N{Number(order.total || 0).toLocaleString()}
+          N{Number(order.total_amount || 0).toLocaleString()}
         </p>
-        <Badge variant={statusVariant} dot>{order.status}</Badge>
+        <Badge variant={statusVariant(status)} dot>{status}</Badge>
       </div>
     </div>
   );
 }
-
-const PLACEHOLDER_CHART = [
-  { label: 'Mon', value: 12 },
-  { label: 'Tue', value: 19 },
-  { label: 'Wed', value: 7 },
-  { label: 'Thu', value: 25 },
-  { label: 'Fri', value: 31 },
-  { label: 'Sat', value: 22 },
-  { label: 'Sun', value: 16 },
-];
 
 export default function OverviewPage() {
   const [data, setData] = useState(null);
@@ -130,9 +139,10 @@ export default function OverviewPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // backend summary fields: total_products, low_stock_products, total_orders, total_sales
   const s = data?.summary ?? {};
   const recentOrders = data?.recent_orders ?? [];
-  const chartData = data?.orders_chart ?? PLACEHOLDER_CHART;
+  const chartData = data?.orders_chart ?? [];
 
   return (
     <div className="space-y-7">
@@ -150,37 +160,36 @@ export default function OverviewPage() {
           label="Products Listed"
           value={loading ? '-' : (s.total_products ?? 0).toLocaleString()}
           icon={Package01Icon}
-          gradient="linear-gradient(135deg, #22c55e, #10b981)"
+          gradient="linear-gradient(135deg, #fe4c1c, #e83f10)"
           loading={loading}
         />
         <MetricCard
           label="Total Orders"
           value={loading ? '-' : (s.total_orders ?? 0).toLocaleString()}
-          sub={`${s.pending_orders ?? 0} pending`}
           icon={ShoppingBag01Icon}
           gradient="linear-gradient(135deg, #6366f1, #3b82f6)"
           loading={loading}
         />
         <MetricCard
-          label="Total Revenue"
-          value={loading ? '-' : `N${(s.total_revenue ?? 0).toLocaleString()}`}
-          sub="All time"
+          label="Total Sales"
+          value={loading ? '-' : `N${Number(s.total_sales ?? 0).toLocaleString()}`}
+          sub="Paid orders"
           icon={DollarCircleIcon}
           gradient="linear-gradient(135deg, #f59e0b, #ef4444)"
           loading={loading}
         />
         <MetricCard
-          label="This Month"
-          value={loading ? '-' : `N${(s.monthly_revenue ?? 0).toLocaleString()}`}
-          sub={`${s.monthly_orders ?? 0} orders`}
-          icon={TrendingUpDownIcon}
+          label="Low Stock"
+          value={loading ? '-' : (s.low_stock_products ?? 0).toLocaleString()}
+          sub="5 or fewer units"
+          icon={AlertDiamondIcon}
           gradient="linear-gradient(135deg, #ec4899, #a855f7)"
           loading={loading}
         />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
-        <SparkChart data={chartData} label="Orders This Week" />
+        <SparkChart data={chartData} />
 
         <div className="ts-card p-6">
           <div className="flex items-center justify-between mb-4">
@@ -193,16 +202,11 @@ export default function OverviewPage() {
 
           {loading ? (
             <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="ts-skeleton h-14 rounded-xl" />
-              ))}
+              {[...Array(4)].map((_, i) => <div key={i} className="ts-skeleton h-14 rounded-xl" />)}
             </div>
           ) : recentOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--bg-overlay)' }}
-              >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--bg-overlay)' }}>
                 <Icon icon={ShoppingBag01Icon} size={18} style={{ color: 'var(--text-muted)' }} />
               </div>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No orders yet</p>

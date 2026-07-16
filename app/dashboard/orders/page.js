@@ -12,19 +12,23 @@ import {
   Package01Icon,
 } from '@hugeicons/core-free-icons';
 
-const STATUS_FILTERS = ['all', 'processing', 'shipped', 'delivered', 'cancelled'];
+const STATUS_FILTERS = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 function statusVariant(s) {
   return s === 'delivered' ? 'success'
     : s === 'shipped'    ? 'info'
     : s === 'processing' ? 'warning'
+    : s === 'pending'    ? 'default'
     : s === 'cancelled'  ? 'error'
     : 'default';
 }
 
 function OrderDrawer({ order, onClose }) {
   if (!order) return null;
-  const items = order.items ?? order.order_items ?? [];
+
+  // backend fields: id, order_number, buyer_name, buyer_email, total_amount,
+  //                 order_status, payment_status, city, delivery_city, created_at
+  const status = order.order_status || order.status || 'pending';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end anim-in">
@@ -39,7 +43,7 @@ function OrderDrawer({ order, onClose }) {
         >
           <div>
             <h2 className="font-bold" style={{ color: 'var(--text-base)' }}>
-              Order #{order.id || order.order_number}
+              Order #{order.order_number || order.id}
             </h2>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
               {order.created_at ? new Date(order.created_at).toLocaleDateString('en-NG', { dateStyle: 'medium' }) : '-'}
@@ -52,14 +56,13 @@ function OrderDrawer({ order, onClose }) {
 
         <div className="px-6 py-5 space-y-5">
           <div className="flex items-center justify-between">
-            <Badge variant={statusVariant(order.status)} dot>
-              {order.status?.replace('_', ' ')}
-            </Badge>
+            <Badge variant={statusVariant(status)} dot>{status}</Badge>
             <p className="text-lg font-black tabular-nums" style={{ color: 'var(--primary)' }}>
-              N{Number(order.total || 0).toLocaleString()}
+              N{Number(order.total_amount || 0).toLocaleString()}
             </p>
           </div>
 
+          {/* Delivery location */}
           <div
             className="rounded-xl p-4 flex items-start gap-3"
             style={{ background: 'var(--bg-overlay)', boxShadow: '0 0 0 1px var(--border-muted)' }}
@@ -71,16 +74,14 @@ function OrderDrawer({ order, onClose }) {
               <Icon icon={Location01Icon} size={15} style={{ color: 'var(--info-text)' }} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Delivery address</p>
+              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Delivery location</p>
               <p className="text-sm font-medium" style={{ color: 'var(--text-base)' }}>
-                {order.delivery_address || order.shipping_address || 'Address not available'}
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {[order.city || order.delivery_city, order.state || order.delivery_state].filter(Boolean).join(', ') || '-'}
+                {order.delivery_city || order.city || 'Not specified'}
               </p>
             </div>
           </div>
 
+          {/* Buyer info - minimal */}
           <div
             className="rounded-xl p-4"
             style={{ background: 'var(--bg-overlay)', boxShadow: '0 0 0 1px var(--border-muted)' }}
@@ -90,19 +91,13 @@ function OrderDrawer({ order, onClose }) {
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'var(--text-muted)' }}>Name</span>
                 <span className="font-medium" style={{ color: 'var(--text-base)' }}>
-                  {order.buyer_name || order.customer_name || 'Hidden'}
+                  {order.buyer_name || 'Hidden'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'var(--text-muted)' }}>City</span>
                 <span className="font-medium" style={{ color: 'var(--text-base)' }}>
-                  {order.city || order.delivery_city || '-'}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span style={{ color: 'var(--text-muted)' }}>State</span>
-                <span className="font-medium" style={{ color: 'var(--text-base)' }}>
-                  {order.state || order.delivery_state || '-'}
+                  {order.delivery_city || order.city || '-'}
                 </span>
               </div>
             </div>
@@ -114,41 +109,7 @@ function OrderDrawer({ order, onClose }) {
             </p>
           </div>
 
-          {items.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>
-                Items ({items.length})
-              </p>
-              <div className="space-y-2">
-                {items.map((item, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl"
-                    style={{ background: 'var(--bg-overlay)' }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: 'var(--bg-card)' }}
-                      >
-                        <Icon icon={Package01Icon} size={14} style={{ color: 'var(--text-muted)' }} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-base)' }}>
-                          {item.name || item.product_name}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Qty: {item.quantity ?? 1}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm font-semibold tabular-nums shrink-0" style={{ color: 'var(--text-base)' }}>
-                      N{Number((item.price || item.unit_price || 0) * (item.quantity || 1)).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* Payment */}
           <div
             className="rounded-xl p-4"
             style={{ background: 'var(--bg-overlay)', boxShadow: '0 0 0 1px var(--border-muted)' }}
@@ -160,12 +121,6 @@ function OrderDrawer({ order, onClose }) {
                 {order.payment_status || 'pending'}
               </Badge>
             </div>
-            <div className="flex justify-between text-sm mt-2">
-              <span style={{ color: 'var(--text-muted)' }}>Method</span>
-              <span className="font-medium capitalize" style={{ color: 'var(--text-base)' }}>
-                {order.payment_method || '-'}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -174,30 +129,29 @@ function OrderDrawer({ order, onClose }) {
 }
 
 function OrderRow({ order, onClick }) {
+  const status = order.order_status || order.status || 'pending';
+  const location = order.delivery_city || order.city || '-';
+
   return (
     <tr className="clickable" onClick={onClick}>
       <td>
         <span className="font-semibold" style={{ color: 'var(--text-base)' }}>
-          #{order.id || order.order_number}
+          #{order.order_number || order.id}
         </span>
       </td>
       <td>
         <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
           <Icon icon={Location01Icon} size={13} style={{ color: 'var(--text-muted)' }} />
-          <span>{order.city || order.delivery_city || '-'}, {order.state || order.delivery_state || '-'}</span>
+          <span>{location}</span>
         </div>
       </td>
-      <td>
-        <span style={{ color: 'var(--text-secondary)' }}>
-          {order.items_count ?? order.items?.length ?? '-'} item(s)
-        </span>
-      </td>
+      <td className="text-gray-600 text-sm">{order.buyer_name || '-'}</td>
       <td>
         <span className="font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
-          N{Number(order.total || 0).toLocaleString()}
+          N{Number(order.total_amount || 0).toLocaleString()}
         </span>
       </td>
-      <td><Badge variant={statusVariant(order.status)} dot>{order.status?.replace('_', ' ')}</Badge></td>
+      <td><Badge variant={statusVariant(status)} dot>{status}</Badge></td>
       <td>
         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
           {order.created_at ? new Date(order.created_at).toLocaleDateString('en-NG', { dateStyle: 'medium' }) : '-'}
@@ -216,20 +170,21 @@ export default function OrdersPage() {
 
   useEffect(() => {
     apiClient.getOrders()
-      .then((res) => setOrders(res.data ?? res.orders ?? []))
+      .then((res) => setOrders(Array.isArray(res) ? res : (res.data ?? res.orders ?? [])))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
   const filtered = orders.filter((o) => {
-    const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+    const orderStatus = o.order_status || o.status || '';
+    const matchStatus = statusFilter === 'all' || orderStatus === statusFilter;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
       String(o.id).includes(q) ||
       String(o.order_number ?? '').toLowerCase().includes(q) ||
-      (o.city ?? '').toLowerCase().includes(q) ||
       (o.delivery_city ?? '').toLowerCase().includes(q) ||
+      (o.city ?? '').toLowerCase().includes(q) ||
       (o.buyer_name ?? '').toLowerCase().includes(q);
     return matchStatus && matchSearch;
   });
@@ -239,7 +194,7 @@ export default function OrdersPage() {
       <div>
         <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--text-base)' }}>Orders</h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-          Track all orders placed for your products.
+          All orders placed for your products.
         </p>
       </div>
 
@@ -275,10 +230,7 @@ export default function OrdersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--bg-overlay)' }}
-            >
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'var(--bg-overlay)' }}>
               <Icon icon={ShoppingBag01Icon} size={24} style={{ color: 'var(--text-muted)' }} />
             </div>
             <p style={{ color: 'var(--text-muted)' }} className="text-sm">No orders found</p>
@@ -289,7 +241,7 @@ export default function OrdersPage() {
               <tr>
                 <th>Order</th>
                 <th>Location</th>
-                <th>Items</th>
+                <th>Buyer</th>
                 <th>Total</th>
                 <th>Status</th>
                 <th>Date</th>
