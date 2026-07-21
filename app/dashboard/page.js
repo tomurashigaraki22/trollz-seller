@@ -11,6 +11,10 @@ import {
   DollarCircleIcon,
   AlertDiamondIcon,
   ArrowRight01Icon,
+  StarIcon,
+  Cancel01Icon,
+  ChartIncreaseIcon,
+  BadgeCheckIcon,
 } from '@hugeicons/core-free-icons';
 import Link from 'next/link';
 
@@ -184,6 +188,41 @@ export default function OverviewPage() {
           sub="5 or fewer units"
           icon={AlertDiamondIcon}
           gradient="linear-gradient(135deg, #ec4899, #a855f7)"
+          loading={loading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <MetricCard
+          label="Conversion Rate"
+          value={loading ? '-' : `${Number(s.conversion_rate ?? 0).toFixed(1)}%`}
+          sub="Paid orders vs views/orders"
+          icon={ChartIncreaseIcon}
+          gradient="linear-gradient(135deg, #14b8a6, #22c55e)"
+          loading={loading}
+        />
+        <MetricCard
+          label="Cancellation Rate"
+          value={loading ? '-' : `${Number(s.cancellation_rate ?? 0).toFixed(1)}%`}
+          sub="Lower is better"
+          icon={Cancel01Icon}
+          gradient="linear-gradient(135deg, #ef4444, #f97316)"
+          loading={loading}
+        />
+        <MetricCard
+          label="Customer Rating"
+          value={loading ? '-' : `${Number(s.average_rating ?? 0).toFixed(1)}/5`}
+          sub={`${Number(s.rating_count ?? 0).toLocaleString()} rating${Number(s.rating_count ?? 0) === 1 ? '' : 's'}`}
+          icon={StarIcon}
+          gradient="linear-gradient(135deg, #eab308, #f59e0b)"
+          loading={loading}
+        />
+        <MetricCard
+          label="Seller Badge"
+          value={loading ? '-' : (s.badge_label ?? 'Growing Seller')}
+          sub={s.top_seller_badge ? 'High-performing store' : 'Keep building momentum'}
+          icon={BadgeCheckIcon}
+          gradient={s.top_seller_badge ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'linear-gradient(135deg, #64748b, #475569)'}
           loading={loading}
         />
       </div>

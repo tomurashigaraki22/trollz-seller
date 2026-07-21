@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       if (!creds.email.trim() || !creds.password.trim())
         throw new Error('Please enter your email and password');
-      const res = await apiClient.sellerLogin(creds.email, creds.password);
+      const res = await apiClient.sellerLogin(creds.email.trim(), creds.password.trim());
       const token = res.data?.token || res.access_token || res.token;
       if (!token) throw new Error('No token received from server');
       login(token, res.data?.seller || res.data?.user || {});
@@ -179,4 +179,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
