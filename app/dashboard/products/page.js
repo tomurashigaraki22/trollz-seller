@@ -36,7 +36,7 @@ function EmptyProducts({ onAdd }) {
   );
 }
 
-function ProductModal({ product, onClose, onSave }) {
+function ProductModal({ product, categories, onClose, onSave }) {
   const isEdit = !!product?.id;
   const [form, setForm] = useState({
     name: product?.name ?? '',
@@ -74,6 +74,7 @@ function ProductModal({ product, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.price) { setError('Name and price are required'); return; }
+    if (!form.category) { setError('Select a category'); return; }
     setSaving(true);
     setError('');
     try {
@@ -128,9 +129,16 @@ function ProductModal({ product, onClose, onSave }) {
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                Category
+                Category *
               </label>
-              <input value={form.category} onChange={set('category')} placeholder="Clothing" className="ts-input" />
+              <select value={form.category} onChange={set('category')} className="ts-input">
+                <option value="">Select category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.category}>
+                    {category.category}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
@@ -259,6 +267,7 @@ function ProductRow({ product, onEdit, onDelete }) {
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null);
 
@@ -271,6 +280,15 @@ export default function ProductsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    apiClient.getCategories()
+      .then((res) => {
+        const rows = Array.isArray(res) ? res : (res.data ?? res.categories ?? []);
+        setCategories(rows.filter((category) => !category.parent_id));
+      })
+      .catch(console.error);
+  }, []);
 
   const filtered = products.filter((p) =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -351,6 +369,7 @@ export default function ProductsPage() {
       {modal !== null && (
         <ProductModal
           product={modal === 'add' ? null : modal}
+          categories={categories}
           onClose={() => setModal(null)}
           onSave={() => { setModal(null); load(); }}
         />
