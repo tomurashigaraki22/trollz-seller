@@ -265,7 +265,7 @@ export default function ProductsPage() {
   const load = () => {
     setLoading(true);
     apiClient.getProducts()
-      .then((res) => setProducts(res.data ?? res.products ?? []))
+      .then((res) => setProducts(Array.isArray(res) ? res : (res.data ?? res.products ?? [])))
       .catch(console.error)
       .finally(() => setLoading(false));
   };
