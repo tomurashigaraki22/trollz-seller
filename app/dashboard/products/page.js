@@ -13,6 +13,20 @@ import {
   Cancel01Icon,
 } from '@hugeicons/core-free-icons';
 
+function parseImageUrls(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch {}
+  return [value].filter(Boolean);
+}
+
+function firstImage(value) {
+  return parseImageUrls(value)[0] || '';
+}
+
 function EmptyProducts({ onAdd }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -38,50 +52,67 @@ function EmptyProducts({ onAdd }) {
 
 function ProductModal({ product, categories, onClose, onSave }) {
   const isEdit = !!product?.id;
+  const topCategories = categories.filter((category) => !category.parent_id);
+  const initialImages = parseImageUrls(product?.image_url);
   const [form, setForm] = useState({
     name: product?.name ?? '',
     price: product?.price ?? '',
     stock: product?.stock ?? '',
     category: product?.category ?? '',
+    subcategory: product?.subcategory ?? '',
     description: product?.description ?? '',
     status: product?.status ?? 'active',
-    image_url: product?.image_url ?? '',
+    image_urls: initialImages,
   });
+  const currentCategory = topCategories.find((category) => category.category === form.category);
+  const childCategories = categories.filter(
+    (category) => currentCategory && Number(category.parent_id) === Number(currentCategory.id)
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setCategory = (e) => setForm((f) => ({ ...f, category: e.target.value, subcategory: '' }));
 
   const handleImageSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files?.length) return;
 
     setError('');
     setUploading(true);
     try {
-      const res = await apiClient.uploadProductImage(file);
-      const imageUrl = res.url || res.data?.url || '';
-      if (!imageUrl) throw new Error('Upload did not return a URL');
-      setForm((f) => ({ ...f, image_url: imageUrl }));
+      const results = await apiClient.uploadProductImages(files);
+      const urls = results.map((res) => res.url || res.data?.url || '').filter(Boolean);
+      if (urls.length === 0) throw new Error('Upload did not return a URL');
+      setForm((f) => ({ ...f, image_urls: [...f.image_urls, ...urls].slice(0, 8) }));
     } catch (err) {
       setError(err.message || 'Image upload failed');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
+  };
+
+  const removeImage = (url) => {
+    setForm((f) => ({ ...f, image_urls: f.image_urls.filter((item) => item !== url) }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.price) { setError('Name and price are required'); return; }
     if (!form.category) { setError('Select a category'); return; }
+    const payload = {
+      ...form,
+      image_url: JSON.stringify(form.image_urls),
+    };
     setSaving(true);
     setError('');
     try {
       if (isEdit) {
-        await apiClient.updateProduct(product.id, form);
+        await apiClient.updateProduct(product.id, payload);
       } else {
-        await apiClient.createProduct(form);
+        await apiClient.createProduct(payload);
       }
       onSave();
     } catch (err) {
@@ -95,7 +126,7 @@ function ProductModal({ product, categories, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 anim-in">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full max-w-[480px] rounded-2xl p-6 anim-scale"
+        className="relative max-h-[90vh] w-full max-w-[560px] overflow-y-auto rounded-2xl p-6 anim-scale"
         style={{ background: 'var(--bg-elevated)', boxShadow: 'var(--shadow-xl)' }}
       >
         <div className="flex items-center justify-between mb-5">
@@ -131,9 +162,22 @@ function ProductModal({ product, categories, onClose, onSave }) {
               <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Category *
               </label>
-              <select value={form.category} onChange={set('category')} className="ts-input">
+              <select value={form.category} onChange={setCategory} className="ts-input">
                 <option value="">Select category</option>
-                {categories.map((category) => (
+                {topCategories.map((category) => (
+                  <option key={category.id} value={category.category}>
+                    {category.category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Subcategory
+              </label>
+              <select value={form.subcategory} onChange={set('subcategory')} className="ts-input" disabled={!form.category || childCategories.length === 0}>
+                <option value="">{childCategories.length ? 'Select subcategory' : 'No subcategory'}</option>
+                {childCategories.map((category) => (
                   <option key={category.id} value={category.category}>
                     {category.category}
                   </option>
@@ -164,11 +208,12 @@ function ProductModal({ product, categories, onClose, onSave }) {
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-                Product image
+                Product images
               </label>
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleImageSelect}
                 className="ts-input"
               />
@@ -177,9 +222,20 @@ function ProductModal({ product, categories, onClose, onSave }) {
                   Uploading image...
                 </p>
               )}
-              {form.image_url && (
-                <div className="mt-3 rounded-xl overflow-hidden border border-[var(--border)]">
-                  <img src={form.image_url} alt="Product preview" className="w-full h-40 object-cover" />
+              {form.image_urls.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {form.image_urls.map((url) => (
+                    <div key={url} className="relative overflow-hidden rounded-xl border border-[var(--border)]">
+                      <img src={url} alt="Product preview" className="h-24 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(url)}
+                        className="absolute right-1 top-1 rounded-full bg-black/70 px-2 py-0.5 text-xs text-white"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -217,8 +273,8 @@ function ProductRow({ product, onEdit, onDelete }) {
             className="w-9 h-9 rounded-xl shrink-0 flex items-center justify-center"
             style={{ background: 'var(--bg-overlay)' }}
           >
-            {product.image_url ? (
-              <img src={product.image_url} alt="" className="w-full h-full object-cover rounded-xl" />
+            {firstImage(product.image_url) ? (
+              <img src={firstImage(product.image_url)} alt="" className="w-full h-full object-cover rounded-xl" />
             ) : (
               <Icon icon={Package01Icon} size={16} style={{ color: 'var(--text-muted)' }} />
             )}
@@ -228,7 +284,9 @@ function ProductRow({ product, onEdit, onDelete }) {
               {product.name}
             </p>
             {product.category && (
-              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{product.category}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                {product.category}{product.subcategory ? ` / ${product.subcategory}` : ''}
+              </p>
             )}
           </div>
         </div>
@@ -264,6 +322,71 @@ function ProductRow({ product, onEdit, onDelete }) {
   );
 }
 
+function ProductMobileCard({ product, onEdit, onDelete }) {
+  const statusVariant =
+    product.status === 'active' ? 'success'
+    : product.status === 'draft' ? 'warning'
+    : 'error';
+
+  return (
+    <div className="ts-card p-4 space-y-4">
+      <div className="flex gap-3">
+        <div
+          className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center"
+          style={{ background: 'var(--bg-overlay)' }}
+        >
+          {firstImage(product.image_url) ? (
+            <img src={firstImage(product.image_url)} alt="" className="w-full h-full object-cover rounded-xl" />
+          ) : (
+            <Icon icon={Package01Icon} size={18} style={{ color: 'var(--text-muted)' }} />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-snug" style={{ color: 'var(--text-base)' }}>
+            {product.name}
+          </p>
+          {product.category && (
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              {product.category}{product.subcategory ? ` / ${product.subcategory}` : ''}
+            </p>
+          )}
+        </div>
+        <Badge variant={statusVariant} dot>{product.status?.replace('_', ' ')}</Badge>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>Price</p>
+          <p className="font-bold tabular-nums mt-1" style={{ color: 'var(--primary)' }}>
+            N{Number(product.price || 0).toLocaleString()}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-muted)' }}>Stock</p>
+          <p className="font-semibold mt-1" style={{ color: Number(product.stock) === 0 ? 'var(--danger-text)' : 'var(--text-base)' }}>
+            {product.stock ?? '-'}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => onEdit(product)} className="ts-btn-secondary ts-btn-sm justify-center">
+          <Icon icon={Edit01Icon} size={15} />
+          Edit
+        </button>
+        <button
+          onClick={() => onDelete(product)}
+          className="ts-btn-ghost ts-btn-sm justify-center"
+          style={{ color: 'var(--danger-text)', boxShadow: '0 0 0 1px var(--border)' }}
+        >
+          <Icon icon={Delete02Icon} size={15} />
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -285,7 +408,7 @@ export default function ProductsPage() {
     apiClient.getCategories()
       .then((res) => {
         const rows = Array.isArray(res) ? res : (res.data ?? res.categories ?? []);
-        setCategories(rows.filter((category) => !category.parent_id));
+        setCategories(rows);
       })
       .catch(console.error);
   }, []);
@@ -332,7 +455,7 @@ export default function ProductsPage() {
         />
       </div>
 
-      <div className="ts-card overflow-x-auto">
+      <div className="ts-card">
         {loading ? (
           <div className="p-6 space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -342,27 +465,29 @@ export default function ProductsPage() {
         ) : filtered.length === 0 ? (
           <EmptyProducts onAdd={() => setModal('add')} />
         ) : (
-          <table className="ts-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <ProductRow
-                  key={p.id}
-                  product={p}
-                  onEdit={(p) => setModal(p)}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="ts-table min-w-[720px]">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <ProductRow
+                    key={p.id}
+                    product={p}
+                    onEdit={(p) => setModal(p)}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
