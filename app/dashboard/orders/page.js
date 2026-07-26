@@ -23,12 +23,24 @@ function statusVariant(s) {
     : 'default';
 }
 
+function parseOrderItems(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function OrderDrawer({ order, onClose }) {
   if (!order) return null;
 
   // backend fields: id, order_number, buyer_name, buyer_email, total_amount,
   //                 order_status, payment_status, city, delivery_city, created_at
   const status = order.order_status || order.status || 'pending';
+  const items = parseOrderItems(order.items);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end anim-in">
@@ -81,6 +93,35 @@ function OrderDrawer({ order, onClose }) {
             </div>
           </div>
 
+          {/* Products ordered */}
+          <div
+            className="rounded-xl p-4"
+            style={{ background: 'var(--bg-overlay)', boxShadow: '0 0 0 1px var(--border-muted)' }}
+          >
+            <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Products ordered</p>
+            {items.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No product details saved.</p>
+            ) : (
+              <div className="space-y-3">
+                {items.map((item, index) => (
+                  <div key={`${item.product_id}-${index}`} className="flex items-start justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-semibold" style={{ color: 'var(--text-base)' }}>
+                        {item.product_name || `Product #${item.product_id}`}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        Qty {item.quantity || 0} x N{Number(item.price || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <p className="font-bold tabular-nums shrink-0" style={{ color: 'var(--primary)' }}>
+                      N{Number(item.subtotal || 0).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Buyer info - minimal */}
           <div
             className="rounded-xl p-4"
@@ -131,6 +172,7 @@ function OrderDrawer({ order, onClose }) {
 function OrderRow({ order, onClick }) {
   const status = order.order_status || order.status || 'pending';
   const location = order.delivery_city || order.city || '-';
+  const items = parseOrderItems(order.items);
 
   return (
     <tr className="clickable" onClick={onClick}>
@@ -138,6 +180,11 @@ function OrderRow({ order, onClick }) {
         <span className="font-semibold" style={{ color: 'var(--text-base)' }}>
           #{order.order_number || order.id}
         </span>
+        {items.length > 0 && (
+          <p className="text-xs truncate max-w-48" style={{ color: 'var(--text-muted)' }}>
+            {items.map((item) => item.product_name).join(', ')}
+          </p>
+        )}
       </td>
       <td>
         <div className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
