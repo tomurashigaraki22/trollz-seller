@@ -12,6 +12,7 @@ import {
   UserGroupIcon,
   ChartBarIncreasingIcon,
   BadgeCheckIcon,
+  Location01Icon,
   Menu01Icon,
   Cancel01Icon,
   Logout01Icon,
@@ -22,6 +23,7 @@ const nav = [
   { name: 'Products',      href: '/dashboard/products',    icon: Package01Icon },
   { name: 'Orders',        href: '/dashboard/orders',      icon: ShoppingBag01Icon },
   { name: 'Analytics',     href: '/dashboard/analytics',   icon: ChartBarIncreasingIcon },
+  { name: 'Delivery',      href: '/dashboard/delivery',    icon: Location01Icon },
   { name: 'Team',          href: '/dashboard/team',        icon: UserGroupIcon },
   { name: 'Verification',  href: '/dashboard/onboarding',  icon: BadgeCheckIcon },
 ];
