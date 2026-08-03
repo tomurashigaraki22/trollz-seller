@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Icon from '@/components/Icon';
 import { apiClient } from '@/lib/api';
 import { getCategoryFields, resolveFieldOptions, buildSpecsText } from '@/lib/categoryFields';
+import { qaImg } from '@/lib/debugImages';
 import {
   Image01Icon,
   Cancel01Icon,
@@ -362,7 +363,7 @@ export default function ProductForm({ product, categories }) {
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {imageUrls.map((url, index) => (
               <div key={url} className="relative overflow-hidden rounded-xl" style={{ boxShadow: '0 0 0 1px var(--border)' }}>
-                <img src={url} alt="Product preview" className="h-24 w-full object-cover" />
+                <img src={qaImg(url)} alt="Product preview" className="h-24 w-full object-cover" />
                 {index === 0 && (
                   <span
                     className="absolute left-1 top-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"

@@ -12,6 +12,7 @@ import {
   Delete02Icon,
   Edit01Icon,
 } from '@hugeicons/core-free-icons';
+import { qaImg } from '@/lib/debugImages';
 
 function parseImageUrls(value) {
   if (!value) return [];
@@ -65,7 +66,7 @@ function ProductRow({ product, onDelete }) {
             style={{ background: 'var(--bg-overlay)' }}
           >
             {firstImage(product.image_url) ? (
-              <img src={firstImage(product.image_url)} alt="" className="w-full h-full object-cover rounded-xl" />
+              <img src={qaImg(firstImage(product.image_url))} alt="" className="w-full h-full object-cover rounded-xl" />
             ) : (
               <Icon icon={Package01Icon} size={16} style={{ color: 'var(--text-muted)' }} />
             )}
