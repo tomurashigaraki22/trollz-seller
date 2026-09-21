@@ -34,6 +34,8 @@ The dry run must show zero unresolved admin memberships. The health check must s
 
 Role changes require a reason and are written to `admin_audit_logs`.
 
+The admin-user screen can create an account directly from an email address and an administrator-provided password. It does not send email automatically; share credentials through a secure channel.
+
 ## Rollback
 
 Rollback means removing access, not disabling RBAC. Use `/admin/admin-users` to deactivate a pilot account or remove its role assignment. The final active `super_admin` cannot be demoted or deactivated by the application.

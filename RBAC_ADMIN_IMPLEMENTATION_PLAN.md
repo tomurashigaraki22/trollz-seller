@@ -252,7 +252,7 @@ The protected layout should resolve `/api/admin/auth/me`, redirect unauthenticat
 - Prevent deleting or demoting the final active super admin.
 - Require a reason for privileged role changes and record before/after audit data.
 
-Implementation note: activation/deactivation, role assignment, custom-role creation, permission constraints, final-super-admin protection, and audit records are live in `trollz_seller`. Email invitations remain a phase-6 integration item because the deployed identity/email service is not present in this repository.
+Implementation note: admin account creation by email/password, activation/deactivation, role assignment, custom-role creation, permission constraints, final-super-admin protection, and audit records are live in `trollz_seller`. This creates the account directly; outbound invitation email delivery still requires the deployed email provider.
 
 ### Phase 6 — migration and rollout — implemented
 
