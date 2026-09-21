@@ -28,7 +28,7 @@ export default function LoginPage() {
       const token = res.data?.token || res.access_token || res.token;
       if (!token) throw new Error('No token received from server');
       login(token, res.data?.seller || res.data?.user || {});
-      router.push('/dashboard');
+      router.push(res.data?.onboarding_required ? '/dashboard/onboarding' : '/dashboard');
     } catch (err) {
       setError(err.message || 'Invalid credentials');
     } finally {

@@ -44,10 +44,23 @@ export async function getMyApplicationAction(email) {
 
 export async function submitOnboardingAction(formData) {
   try {
-    const email = formData.get("email");
+    const email = String(formData.get("email") || "").trim();
+    if (!email) return { ok: false, error: "Email address is required." };
 
     const existing = await getApplicationByEmail(email);
-    if (existing) {
+    const sellerRows = await query(
+      "SELECT id, status FROM users WHERE LOWER(email) = LOWER(?) AND role = 'Seller' LIMIT 1",
+      [email]
+    );
+    const seller = sellerRows[0];
+    const canReapply = Boolean(
+      existing &&
+      seller &&
+      Number(seller.status) === 0 &&
+      existing.verification_status === "rejected" &&
+      (!existing.seller_user_id || Number(existing.seller_user_id) === Number(seller.id))
+    );
+    if (existing && !canReapply) {
       return { ok: false, error: "You've already submitted an onboarding application." };
     }
 
@@ -63,13 +76,8 @@ export async function submitOnboardingAction(formData) {
     const productPhotoFiles = formData.getAll("productPhotos");
     const productPhotosUrls = (await Promise.all(productPhotoFiles.map(saveFile))).filter(Boolean);
 
-    const sellerRows = await query(
-      "SELECT id FROM users WHERE email = ? AND role = 'Seller' LIMIT 1",
-      [email.trim()]
-    );
-
     await createApplication({
-      sellerUserId: sellerRows[0]?.id ?? null,
+      sellerUserId: seller?.id ?? null,
       fullName: formData.get("fullName"),
       dateOfBirth: formData.get("dateOfBirth"),
       phone: formData.get("phone"),

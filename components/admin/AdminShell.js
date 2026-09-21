@@ -9,6 +9,7 @@ const links = [
   { href: '/admin/orders', label: 'Orders', permission: 'orders.read' },
   { href: '/admin/sellers', label: 'Sellers', permission: 'sellers.read' },
   { href: '/admin/seller-applications', label: 'Seller applications', permission: 'seller_applications.read' },
+  { href: '/admin/users', label: 'Users', permission: 'customers.read_limited' },
   { href: '/admin/roles', label: 'Roles', permission: 'admin_roles.read' },
   { href: '/admin/admin-users', label: 'Admin users', permission: 'admin_users.read' },
   { href: '/admin/audit-logs', label: 'Audit log', permission: 'audit_logs.read' },

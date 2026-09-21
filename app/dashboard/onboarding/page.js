@@ -118,8 +118,8 @@ export default function OnboardingPage() {
     return <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p>;
   }
 
-  if (done || application) {
-    const status = application?.verification_status ?? 'pending';
+  if (done || (application && application.verification_status !== 'rejected')) {
+    const status = done ? 'pending' : (application?.verification_status ?? 'pending');
     const style = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
     return (
       <div className="ts-card p-8 max-w-2xl">
@@ -155,6 +155,13 @@ export default function OnboardingPage() {
           Complete this form so the Trollz Store team can verify your seller account.
         </p>
       </div>
+
+      {application?.verification_status === 'rejected' && (
+        <div className="ts-card p-5" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
+          <p className="text-sm font-semibold">Your previous seller access was deactivated.</p>
+          <p className="mt-1 text-sm">Submit the onboarding form again. Your access will be restored after admin approval.</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <SectionCard title="1. Personal Information">

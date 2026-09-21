@@ -18,6 +18,9 @@ export async function PATCH(request, routeContext) {
        WHERE id = ?`,
       [status, remarks || null, status === 'pending' ? null : context.principal.email, id]
     );
+    if (status === 'approved' && beforeRows[0].seller_user_id) {
+      await query("UPDATE users SET status = 1 WHERE id = ? AND role = 'Seller'", [beforeRows[0].seller_user_id]);
+    }
     const afterRows = await query("SELECT * FROM seller_applications WHERE id = ? LIMIT 1", [id]);
     await writeAuditLog({ actorId: context.principal.id, action: 'seller_application.reviewed', permissionCode: PERMISSIONS.SELLER_APPLICATIONS_REVIEW, resourceType: 'seller_application', resourceId: id, sellerId: afterRows[0]?.seller_user_id || null, before: beforeRows[0], after: afterRows[0], requestId: requestId(request) });
     return jsonOk({ application: afterRows[0] });
