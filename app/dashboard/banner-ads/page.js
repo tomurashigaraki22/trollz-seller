@@ -152,8 +152,8 @@ export default function BannerAdsPage() {
           <input type="url" value={targetUrl} onChange={(event) => setTargetUrl(event.target.value)} placeholder="https://your-store-or-product-link" className="ts-input mt-2" />
         </label>
 
-        <button type="submit" disabled={loading || uploading || paying || !selected || !imageUrl} className="ts-btn ts-btn-primary">
-          {paying ? 'Opening payment...' : selected ? `Pay ${money.format(Number(selected.price || 0))}` : 'Choose a period'}
+        <button type="submit" disabled={loading || uploading || paying || !selected || Number(selected?.price || 0) <= 0 || !imageUrl} className="ts-btn ts-btn-primary">
+          {paying ? 'Opening payment...' : selected && Number(selected.price || 0) > 0 ? `Pay ${money.format(Number(selected.price))}` : 'Awaiting admin pricing'}
         </button>
       </form>
 

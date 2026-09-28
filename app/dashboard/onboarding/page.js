@@ -348,6 +348,7 @@ export default function OnboardingPage() {
               name="agreementAccepted"
               checked={agreed}
               onChange={(event) => setAgreed(event.target.checked)}
+              required
               className="h-4 w-4 accent-[var(--primary)]"
             />
             I have read and agree to the{" "}
