@@ -3,12 +3,24 @@
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { headers } from "next/headers";
 import { query } from "@/lib/db";
-import { createApplication, getApplicationByEmail } from "@/lib/sellerApplications";
+import { createApplication, getApplicationByEmail, SELLER_AGREEMENT_VERSION } from "@/lib/sellerApplications";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "seller-applications");
 const MAX_SIZE = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+
+async function getAgreementAuditMetadata() {
+  const requestHeaders = await headers();
+  const forwarded = requestHeaders.get("x-forwarded-for") || "";
+  const ip = forwarded.split(",")[0].trim() || requestHeaders.get("x-real-ip") || "unknown";
+  const secret = process.env.ADMIN_SESSION_PASSWORD || "seller-agreement-audit";
+  return {
+    agreementIpHash: crypto.createHash("sha256").update(`${secret}:${ip}`).digest("hex"),
+    agreementUserAgent: (requestHeaders.get("user-agent") || "unknown").slice(0, 255),
+  };
+}
 
 function extensionFor(mimeType) {
   return (
@@ -46,6 +58,12 @@ export async function submitOnboardingAction(formData) {
   try {
     const email = String(formData.get("email") || "").trim();
     if (!email) return { ok: false, error: "Email address is required." };
+    const signatureName = String(formData.get("signatureName") || "").trim();
+    const agreementAccepted = ["on", "true", "1"].includes(String(formData.get("agreementAccepted") || "").toLowerCase());
+    if (!agreementAccepted) return { ok: false, error: "You must accept the Seller Agreement before submitting." };
+    if (signatureName.length < 2 || signatureName.length > 120) {
+      return { ok: false, error: "Enter your full name as the agreement signature." };
+    }
 
     const existing = await getApplicationByEmail(email);
     const sellerRows = await query(
@@ -53,6 +71,7 @@ export async function submitOnboardingAction(formData) {
       [email]
     );
     const seller = sellerRows[0];
+    if (!seller) return { ok: false, error: "Your seller account could not be found. Please sign in again." };
     const canReapply = Boolean(
       existing &&
       seller &&
@@ -75,6 +94,7 @@ export async function submitOnboardingAction(formData) {
 
     const productPhotoFiles = formData.getAll("productPhotos");
     const productPhotosUrls = (await Promise.all(productPhotoFiles.map(saveFile))).filter(Boolean);
+    const agreementAudit = await getAgreementAuditMetadata();
 
     await createApplication({
       sellerUserId: seller?.id ?? null,
@@ -113,8 +133,11 @@ export async function submitOnboardingAction(formData) {
       proofOfAddressUrl,
       productPhotosUrls,
       businessLogoUrl,
-      agreementAccepted: formData.get("agreementAccepted") === "on",
-      signatureName: formData.get("signatureName"),
+      agreementAccepted: true,
+      signatureName,
+      agreementVersion: SELLER_AGREEMENT_VERSION,
+      agreementAcceptedAt: new Date(),
+      ...agreementAudit,
     });
 
     return { ok: true };

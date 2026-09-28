@@ -11,6 +11,9 @@ export async function PATCH(request, routeContext) {
     const body = await request.json();
     const status = String(body?.verification_status || '').toLowerCase();
     if (!['pending', 'approved', 'rejected'].includes(status)) return jsonBadRequest('Application status must be pending, approved, or rejected.');
+    if (status === 'approved' && (Number(beforeRows[0].agreement_accepted) !== 1 || !String(beforeRows[0].signature_name || '').trim())) {
+      return jsonBadRequest('This application cannot be approved until the Seller Agreement is accepted and signed.');
+    }
     const remarks = body?.remarks == null ? beforeRows[0].remarks : String(body.remarks).trim();
     await query(
       `UPDATE seller_applications

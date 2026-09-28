@@ -338,6 +338,7 @@ export default function OnboardingPage() {
             listings, or repeated failure to fulfill orders; and I agree to comply with Trollz
             Store&apos;s Seller Terms &amp; Conditions, Marketplace Policies, and Seller Agreement.
           </p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Agreement version 2026-09-28. Your acceptance time and signature are recorded with this application.</p>
           <Field label="Type your full name as your signature">
             <input name="signatureName" required className="ts-input" />
           </Field>
@@ -353,7 +354,7 @@ export default function OnboardingPage() {
             <a
               href="https://trollzstore.com.ng/seller-agreement"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               style={{ color: "var(--primary)" }}
               className="underline"
             >

@@ -13,6 +13,7 @@ import {
   ChartBarIncreasingIcon,
   BadgeCheckIcon,
   Location01Icon,
+  Image01Icon,
   Menu01Icon,
   Cancel01Icon,
   Logout01Icon,
@@ -24,6 +25,7 @@ const nav = [
   { name: 'Orders',        href: '/dashboard/orders',      icon: ShoppingBag01Icon },
   { name: 'Analytics',     href: '/dashboard/analytics',   icon: ChartBarIncreasingIcon },
   { name: 'Delivery',      href: '/dashboard/delivery',    icon: Location01Icon },
+  { name: 'Banner ads',     href: '/dashboard/banner-ads',  icon: Image01Icon },
   { name: 'Team',          href: '/dashboard/team',        icon: UserGroupIcon },
   { name: 'Verification',  href: '/dashboard/onboarding',  icon: BadgeCheckIcon },
 ];
