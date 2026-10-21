@@ -7,6 +7,12 @@ import { apiClient } from '@/lib/api';
 import { getCategoryFields, resolveFieldOptions, buildSpecsText } from '@/lib/categoryFields';
 import { qaImg } from '@/lib/debugImages';
 import {
+  PRODUCT_VIDEO_ACCEPT,
+  PRODUCT_VIDEO_MAX_BYTES,
+  PRODUCT_VIDEO_MAX_DURATION_SECONDS,
+  formatMegabytes,
+} from '@/lib/mediaLimits';
+import {
   Image01Icon,
   Cancel01Icon,
   AlertCircleIcon,
@@ -31,6 +37,23 @@ function parseJsonArray(value) {
   } catch {
     return [];
   }
+}
+
+function readVideoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(Number(video.duration));
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('The video could not be read. Use an MP4 or WebM file.'));
+    };
+    video.src = objectUrl;
+  });
 }
 
 function Section({ title, description, children }) {
@@ -146,6 +169,15 @@ export default function ProductForm({ product, categories }) {
   const [status, setStatus] = useState(product?.status ?? 'active');
   const [description, setDescription] = useState(product?.description ?? '');
   const [imageUrls, setImageUrls] = useState(parseImageUrls(product?.image_url));
+  const [video, setVideo] = useState(() => (
+    product?.video_url
+      ? {
+          url: product.video_url,
+          duration: Number(product.video_duration || 0),
+          mime: product.video_mime || 'video/mp4',
+        }
+      : null
+  ));
   const [attributeValues, setAttributeValues] = useState(() => {
     let otherAttributes = {};
     try {
@@ -201,6 +233,40 @@ export default function ProductForm({ product, categories }) {
     setImageUrls((prev) => prev.filter((item) => item !== url));
   }
 
+  async function handleVideoSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError('');
+    try {
+      if (!['video/mp4', 'video/webm'].includes(file.type)) {
+        throw new Error('Use an MP4 or WebM video for reliable web playback.');
+      }
+      if (file.size > PRODUCT_VIDEO_MAX_BYTES) {
+        throw new Error(`Product video must be smaller than ${formatMegabytes(PRODUCT_VIDEO_MAX_BYTES)}.`);
+      }
+      const duration = await readVideoDuration(file);
+      if (!Number.isFinite(duration) || duration <= 0 || duration > PRODUCT_VIDEO_MAX_DURATION_SECONDS) {
+        throw new Error(`Product video duration must be between 1 and ${PRODUCT_VIDEO_MAX_DURATION_SECONDS} seconds.`);
+      }
+
+      setUploading(true);
+      const response = await apiClient.uploadProductVideo(file);
+      const media = response.data ?? response;
+      if (!media.url) throw new Error('Video upload did not return a URL.');
+      setVideo({
+        url: media.url,
+        duration: Number(media.duration || duration),
+        mime: media.mime || file.type,
+      });
+    } catch (err) {
+      setError(err.message || 'Video upload failed');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!name.trim() || !price) {
@@ -230,6 +296,9 @@ export default function ProductForm({ product, categories }) {
       status,
       description: fullDescription,
       image_url: JSON.stringify(imageUrls),
+      video_url: video?.url || null,
+      video_duration: video?.duration || null,
+      video_mime: video?.mime || null,
       color_options: JSON.stringify(attributeValues.colors ?? []),
       size_options: JSON.stringify(attributeValues.sizes ?? []),
       size_type: category === 'Fashion' ? 'clothing' : attributeValues.sizes?.length ? 'custom' : 'none',
@@ -381,6 +450,30 @@ export default function ProductForm({ product, categories }) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+      </Section>
+
+      <Section
+        title="Product Video"
+        description={`Optional MP4 or WebM video. Maximum ${formatMegabytes(PRODUCT_VIDEO_MAX_BYTES)} and ${PRODUCT_VIDEO_MAX_DURATION_SECONDS} seconds.`}
+      >
+        <label
+          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl py-7 text-sm"
+          style={{ boxShadow: '0 0 0 1px var(--border)', color: 'var(--text-secondary)' }}
+        >
+          {uploading ? 'Uploading...' : video ? 'Replace product video' : 'Click to upload a product video'}
+          <input type="file" accept={PRODUCT_VIDEO_ACCEPT} onChange={handleVideoSelect} className="hidden" disabled={uploading} />
+        </label>
+        {video && (
+          <div className="relative overflow-hidden rounded-xl" style={{ boxShadow: '0 0 0 1px var(--border)' }}>
+            <video src={video.url} controls playsInline preload="metadata" className="aspect-video w-full bg-black object-contain" />
+            <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span>{video.duration ? `${video.duration.toFixed(1)} seconds` : 'Uploaded video'}</span>
+              <button type="button" onClick={() => setVideo(null)} className="font-semibold" style={{ color: 'var(--danger-text)' }}>
+                Remove video
+              </button>
+            </div>
           </div>
         )}
       </Section>
