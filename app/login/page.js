@@ -60,15 +60,11 @@ export default function LoginPage() {
       <div className="relative w-full max-w-[400px] anim-up">
         {/* Brand header */}
         <div className="text-center mb-8">
-          <div
-            className="inline-flex w-16 h-16 rounded-2xl items-center justify-center mb-5"
-            style={{
-              background: 'var(--grad-primary)',
-              boxShadow: '0 0 0 1px rgba(254,76,28,0.3), 0 8px 24px rgba(254,76,28,0.18)',
-            }}
-          >
-            <span className="text-3xl font-black text-white">T</span>
-          </div>
+          <img
+            src="/trollz-logo.png"
+            alt="Trollz Store"
+            className="mx-auto mb-5 h-16 w-auto max-w-[260px] object-contain"
+          />
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-base)' }}>
             Seller Portal
           </h1>

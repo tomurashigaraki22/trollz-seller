@@ -5,8 +5,13 @@ const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Trollz Store â€” Seller',
+  title: 'Trollz Store — Seller',
   description: 'Seller dashboard for Trollz Store',
+  icons: {
+    icon: [{ url: '/icon.png', type: 'image/png' }],
+    shortcut: '/icon.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {

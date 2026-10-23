@@ -51,7 +51,13 @@ export default function AdminShell({ admin, children }) {
         ].join(' ')}
       >
         <div className="border-b border-white/10 px-5 py-5">
-          <p className="text-lg font-black">Trollz<span className="text-brand-500">Admin</span></p>
+          <div className="inline-flex h-12 w-[210px] items-center rounded-xl bg-white px-3 py-2">
+            <img
+              src="/trollz-logo.png"
+              alt="Trollz Store"
+              className="h-full w-full object-contain"
+            />
+          </div>
           <p className="mt-1 truncate text-xs text-ink-400">{admin.email}</p>
         </div>
 

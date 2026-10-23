@@ -63,9 +63,13 @@ export default function Sidebar() {
         ].join(' ')}
       >
         <div className="border-b border-white/10 px-5 py-5">
-          <span className="text-lg font-extrabold tracking-tight text-white">
-            Trollz<span className="text-brand-500">Seller</span>
-          </span>
+          <div className="inline-flex h-12 w-[190px] items-center rounded-xl bg-white px-3 py-2">
+            <img
+              src="/trollz-logo.png"
+              alt="Trollz Store"
+              className="h-full w-full object-contain"
+            />
+          </div>
           <p className="mt-1 truncate text-xs text-ink-500">Seller Dashboard</p>
         </div>
 
