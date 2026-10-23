@@ -34,6 +34,13 @@ export default function AdminLoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-ink-900 px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-2xl bg-ink-800 p-7 shadow-xl">
+        <div className="mb-5 inline-flex h-12 w-[210px] items-center rounded-xl bg-white px-3 py-2">
+          <img
+            src="/trollz-logo.png"
+            alt="Trollz Store"
+            className="h-full w-full object-contain"
+          />
+        </div>
         <h1 className="text-xl font-black text-white">Trollz Admin</h1>
         <p className="mt-2 text-sm text-ink-400">Sign in with an assigned admin account.</p>
 
